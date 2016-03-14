@@ -24,8 +24,8 @@
     </header>
     <section>
     	<div class="form">
-    		<input type="text" class="query"></input>
-    		<button>Search</button>
+    		<input type="text" class="query_input"></input>
+    		<button class="query">Search</button>
     	</div>
     	<div class="result">
     		<ul class="display_results"></ul>
@@ -43,42 +43,100 @@
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="js/bootstrap.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
-    <script src="http://underscorejs.org/underscore-min.js"></script>
 
 
 
     <script type="text/javascript">
+		var stocks = [], ready = false;
 		$.ajax({
 			url: "api.php",
 			context: document.body
 		}).done(function(data) {
-			var test = data.split(/[\n\r]/g)
-			// console.log('data:', test[0])
-
-			var stocks =[];
-			for(var i = 0; i < test.length; i ++){
+			var extract = data.split(/[\n\r]/g)
+			for(var i = 0; i < extract.length; i ++){
 				if(i === 0){
-					// header
+					header = extract[i].split("|");
 				} else {
 					// data
-					if(test[i] !== ''){
-						stocks.push(test[i].split("|"))			
+					if(extract[i] !== ''){
+						var extracted = extract[i].split("|"),
+							temp = [], title;
+						for (var j = 0; j < header.length; j ++) {
+							title = header[j].replace(' ', '_').toLowerCase()
+
+							if(typeof temp[title] == 'undefined')
+								temp[title] = []
+
+							temp[title] = extracted[j];
+						}		
+						stocks.push(temp);
 					}
 				}
-
 			}
-			// console.log(stocks)
-
-			$('.query').on('change', function(ev) {
-				var test_val = false;
-				if($(this).val() !== '')
-					test_val = _.findWhere(stocks, $(this).val());
-
-				if(test_val){
-					console.log(test_val)
-				}
-			})
+			console.log('ready')
+			console.log(stocks)
+			ready = true;
 		});	
+
+		$('.query').on('click', function(ev) {
+			var get_val = $('.query_input').val();
+			if(get_val != ''){
+				if($('.display_results li').length >= 1)
+					$('.display_results').html('');
+
+				for (var k = 0; k < stocks.length; k ++) {
+					var symbol = stocks[k]['symbol'].toLowerCase();
+					if(symbol.indexOf(get_val) >= 0){
+						$('.display_results').append($('<li>').html('<a href="http://finance.yahoo.com/d/quotes.csv?s='+symbol.toUpperCase()+'&f=sndk1t1">'
+							+ symbol.toUpperCase() 
+							+ ': '
+							+ stocks[k]['security_name']
+							+'</a>'));
+					}
+				}
+			} else {
+				$('.display_results').html('');
+			}
+			if($('.display_results li').length === 0)
+				$('.display_results').html('<li>Symbol does not exist</li>');
+
+		})
+
+		$('li').on('click', function(ev) {
+
+		});
+
+
+		function get_stock(uri){				
+			$.ajax({
+				url: "api2.php",
+				context: document.body
+			}).done(function(data) {
+				var extract = data.split(/[\n\r]/g)
+				for(var i = 0; i < extract.length; i ++){
+					if(i === 0){
+						header = extract[i].split("|");
+					} else {
+						// data
+						if(extract[i] !== ''){
+							var extracted = extract[i].split("|"),
+								temp = [], title;
+							for (var j = 0; j < header.length; j ++) {
+								title = header[j].replace(' ', '_').toLowerCase()
+
+								if(typeof temp[title] == 'undefined')
+									temp[title] = []
+
+								temp[title] = extracted[j];
+							}		
+							stocks.push(temp);
+						}
+					}
+				}
+				console.log('ready')
+				ready = true;
+			});	
+		}
     </script>
 
 
